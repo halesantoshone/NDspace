@@ -1,0 +1,189 @@
+import tensorflow as tf
+
+import numpy as np
+import matplotlib.pyplot as plt 
+
+from tensorflow import keras
+
+tf.keras.__version__
+
+from tensorflow.keras import layers
+
+#import keras
+
+tf.__version__
+
+keras.__version__
+
+fashion_mnist = keras.datasets.fashion_mnist
+
+# https://www.tensorflow.org/tutorials/keras/basic_classification
+
+(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+
+train_images.shape
+
+train_labels.shape
+
+test_images.shape
+
+train_labels[0]
+
+type(train_images)
+
+type(train_labels)
+
+train_labels
+
+test_images.shape
+
+test_images[0].shape
+
+test_labels.shape
+
+train_images[0]  # 28X28 matrix holding pixel values
+
+plt.imshow(train_images[0])
+#plt.imshow(test_images[0])
+plt.colorbar();
+#plt.grid(True)
+
+train_images = train_images / 255.0
+test_images  = test_images / 255.0
+
+type(train_images)
+
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 
+               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+plt.figure(figsize=(10,10))
+for i in range(25):
+    plt.subplot(5,5,i+1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+#   plt.imshow(train_images[i], cmap=plt.cm.binary)  # grey scale , Black & white
+    plt.imshow(train_images[i])                      # Colored Image
+    plt.xlabel(class_names[train_labels[i]]) 
+    
+
+#### Building the Neural Network Model using tf.keras using Functional APIs
+
+# model = keras.Sequential([
+#     keras.layers.Flatten(input_shape=(28, 28)),
+#     keras.layers.Dense(150, activation=tf.nn.relu),
+#     keras.layers.Dense(10, activation=tf.nn.softmax)
+# ])
+
+# from keras.models import Model
+# from keras.layers import Input
+# from keras.layers import Dense
+# inputs = Input(shape=(28,28))  # Returns a placeholder tensor
+
+# type(inputs)
+
+#inputs = layers.Flatten()(inputs)  # Returns a placeholder tensor
+
+# A layer instance is callable on a tensor, and returns a tensor.
+from keras.models import Model
+from keras.layers import Input
+from keras.layers import Dense
+from keras.layers import Flatten
+inputs = Input(shape=(28,28))  # Returns a placeholder tensor
+hidden1 = Dense(10, activation='relu')(inputs)
+hidden2 = Dense(20, activation='relu')(hidden1)
+hidden3 = Flatten()(hidden2)
+output = Dense(10, activation='softmax')(hidden3)
+model = Model(inputs=inputs, outputs=output)
+
+# summarize layers
+print(model.summary())
+
+#### Instantiate the model given inputs and outputs.
+
+# tf.keras.layers.Flatten, transforms the format of the images from a 2d-array (of 28 by 28 pixels),
+# to a 1d-array of 28 * 28 = 784 pixels
+
+# After the pixels are flattened, the network consists of a sequence of two 
+# tf.keras.layers.Dense layers. These are densely-connected, or fully-connected,
+# neural layers. 
+
+#### Compile the Model 
+
+model.compile(optimizer=tf.train.AdamOptimizer(), 
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'] )
+
+# Adam - A Method for Stochastic Optimization
+# for multiclassification loss='categorical_crossentropy'
+# for binary-classification loss='binary_crossentropy'
+# for regression  loss='mse' (mean squared error regression)
+
+### Train the MOdel
+
+# (1) Feed the training data (train_images and train_labels arrays).
+# (2) The model learns to associate images and labels.
+# (3) Predicte on test image to evaluate the model prediction\
+# (train_images, train_labels), (test_images, test_labels) = keras.datasets.mnist.load_data()
+# train_images = train_images.reshape(60000, 28, 28).astype('float32') / 255
+# test_images = test_images.reshape(10000, 28, 28).astype('float32') / 255
+
+train_labels = train_labels.reshape(60000, 1)
+
+model.fit(train_images, train_labels, batch_size = 64, epochs=5)
+
+print(model.layers[1].get_weights()[0].shape)
+print(model.layers[2].get_weights()[0].shape)
+
+model.layers[1].get_weights()[0] # get weights for first layer to hidden layer (28X28 = 786 input nodes) for 150 hidden nodes
+#model.layers[1].get_weights()[0].shape
+
+model.layers[2].get_weights()[0] # get weights for hidden layer (100 hidden layer to output of 10 nodes)
+#model.layers[2].get_weights()[0].shape
+
+# biases for hidden layer (150 nodes)
+biases = model.layers[1].get_weights()[1]
+biases
+
+# biases for output layer
+biases = model.layers[2].get_weights()[1]
+biases
+
+### For predicting the image, input must be in 3-dimesional
+
+temp = test_images[0:1]
+
+temp.shape
+
+temp
+
+# plot hte first test image
+plt.imshow(test_images[0])
+plt.colorbar();
+print(test_labels[0])
+
+model.predict(temp)
+
+# first test image pixel data
+test_images[0]
+
+# predict for first test image
+pred = model.predict(test_images[0:1])
+pred
+
+np.round(pred, decimals=3) # rounded 
+
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 
+               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+np.round( model.predict(test_images[0:3]), 3)  # feeding first three images in the test 
+
+# Model is predicting 
+# First image  - class 9 (Ankle boot) with 98% likelihood
+# Second Image - Class 2 (Pullover)  with 99% Likelihood
+# Third Image  - Class 1 (Trouser)   With 100% likelihood
+
+# Evalue the Model performance 
+test_loss, test_acc = model.evaluate(test_images, test_labels, verbose=1)
+
+print('Test accuracy:', test_acc)
